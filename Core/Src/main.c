@@ -21,7 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <MMA8452Q.h>
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -69,7 +71,8 @@ static void MX_I2C1_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	HAL_StatusTypeDef ret;
+	uint8_t buf[12];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -101,6 +104,29 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+	  // Reset LEDs
+	  HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+
+	  // Tell MMA that we want to read from the identification register
+	  buf[0] = WHO_AM_I;
+	  ret = HAL_I2C_Master_Transmit(&hi2c1, WHO_AM_I, buf, 1, HAL_MAX_DELAY);
+
+	  if ( ret != 0x2A )	// WHO_AM_I should always be 0x2A
+	  {
+		  strcpy((char*)buf, "Error Tx\r\n");
+		  HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
+	  } else {
+		  strcpy((char*)buf, "Success\r\n");
+		  HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+	  }
+
+	 // Send out buffer (temperature or error message)
+	 HAL_UART_Transmit(&huart2, buf, strlen((char*)buf), HAL_MAX_DELAY);
+
+	 // Wait
+	 HAL_Delay(500);
 
     /* USER CODE BEGIN 3 */
   }
